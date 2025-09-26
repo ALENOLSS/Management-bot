@@ -2,7 +2,6 @@ import logging
 import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
-from aiohttp import web
 
 # -----------------------------
 # Logging
