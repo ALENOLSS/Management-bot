@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # -----------------------------
-# Hardcoded info
+# Replace with your own info
 BOT_TOKEN = "8190987979:AAGqLQxym3_45oM0W1hhwfl2t0XTM4ZUOT4"
 CHANNEL_ID = -1002678391495   # Your channel ID
 ADMIN_ID = 7282835498         # Only you can use the bot
@@ -26,6 +26,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🚫 Access Denied! Only the channel admin can use this bot.")
         return ConversationHandler.END
 
+    # Fake animation for verifying admin
     msg = await update.message.reply_text("🔐 Verifying admin...")
     await asyncio.sleep(1)
     await msg.edit_text("🔐 Verifying admin... ▓░░░")
@@ -35,6 +36,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await msg.edit_text("🔐 Verifying admin... ▓▓▓░")
     await asyncio.sleep(1)
     await msg.edit_text("✅ Access granted! Welcome boss 😎")
+
     await asyncio.sleep(1)
     await update.message.reply_text("✍️ Send me the message text you want to post:")
     return ASK_TEXT
@@ -63,6 +65,7 @@ async def get_button_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(btn_text, url=btn_url)]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    # Send to channel
     await context.bot.send_message(
         chat_id=CHANNEL_ID,
         text=msg_text,
@@ -79,8 +82,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # -----------------------------
-# Telegram bot main
-def run_bot():
+# Main
+def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     conv = ConversationHandler(
@@ -94,30 +97,10 @@ def run_bot():
     )
 
     app.add_handler(conv)
+
     print("🤖 Bot started...")
     app.run_polling()
 
 # -----------------------------
-# Webserver to keep bot alive 24/7
-async def handle(request):
-    return web.Response(text="Bot is running!")
-
-async def run_webserver():
-    app_web = web.Application()
-    app_web.add_routes([web.get('/', handle)])
-    runner = web.AppRunner(app_web)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 10000)
-    await site.start()
-    while True:
-        await asyncio.sleep(3600)
-
-# -----------------------------
-# Run both bot + webserver together
-async def main_async():
-    bot_task = asyncio.create_task(asyncio.to_thread(run_bot))
-    web_task = asyncio.create_task(run_webserver())
-    await asyncio.gather(bot_task, web_task)
-
 if __name__ == "__main__":
-    asyncio.run(main_async())
+    main()
