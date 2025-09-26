@@ -7,6 +7,8 @@ services:
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python bot.py"
     envVars:
+      - key: BOT_TOKEN
+        value: "8190987979:AAGqLQxym3_45oM0W1hhwfl2t0XTM4ZUOT4"
       - key: ADMIN_ID
         value: "7282835498"
       - key: CHANNEL_ID
