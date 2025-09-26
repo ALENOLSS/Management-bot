@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: telegram-management-bot
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python bot.py"
+    envVars:
+      # Bot token (kept secret in Render)
+      - key: BOT_TOKEN
+        fromSecret: "8190987979:AAGqLQxym3_45oM0W1hhwfl2t0XTM4ZUOT4"
+
+      # Your Telegram admin ID
+      - key: ADMIN_ID
+        value: "7282835498"
+
+      # Your channel ID
+      - key: CHANNEL_ID
+        value: "-1002678391495"
