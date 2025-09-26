@@ -1,102 +1,112 @@
+import logging
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
-    CallbackContext,
-    ConversationHandler,
-    CallbackQueryHandler
-)
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
+
+# -----------------------------
+# Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# -----------------------------
+# Replace with your own info
+BOT_TOKEN = "8190987979:AAGqLQxym3_45oM0W1hhwfl2t0XTM4ZUOT4"
+CHANNEL_ID = -1002678391495   # Your channel ID
+ADMIN_ID = 7282835498         # Only you can use the bot
 
 # States
-TEXT, BUTTON_TEXT, BUTTON_URL, CONFIRM = range(4)
+ASK_TEXT, ASK_BTN_TEXT, ASK_BTN_URL = range(3)
 
-# Your private channel ID
-CHANNEL_ID = -1002678391495  
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text("✍️ Send me the main message text:")
-    return TEXT
+# -----------------------------
+# Start command
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
 
-def get_text(update: Update, context: CallbackContext):
-    context.user_data['message_text'] = update.message.text
-    update.message.reply_text("🔘 Now send the inline button text:")
-    return BUTTON_TEXT
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("🚫 Access Denied! Only the channel admin can use this bot.")
+        return ConversationHandler.END
 
-def get_button_text(update: Update, context: CallbackContext):
-    context.user_data['button_text'] = update.message.text
-    update.message.reply_text("🌐 Finally, send the URL for the button:")
-    return BUTTON_URL
+    # Fake animation for verifying admin
+    msg = await update.message.reply_text("🔐 Verifying admin...")
+    await asyncio.sleep(1)
+    await msg.edit_text("🔐 Verifying admin... ▓░░░")
+    await asyncio.sleep(1)
+    await msg.edit_text("🔐 Verifying admin... ▓▓░░")
+    await asyncio.sleep(1)
+    await msg.edit_text("🔐 Verifying admin... ▓▓▓░")
+    await asyncio.sleep(1)
+    await msg.edit_text("✅ Access granted! Welcome boss 😎")
 
-def get_button_url(update: Update, context: CallbackContext):
-    context.user_data['button_url'] = update.message.text
+    await asyncio.sleep(1)
+    await update.message.reply_text("✍️ Send me the message text you want to post:")
+    return ASK_TEXT
 
-    # Preview message with button
-    keyboard = [[InlineKeyboardButton(context.user_data['button_text'], url=context.user_data['button_url'])]]
+
+# -----------------------------
+# Step 1 - Get message text
+async def get_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["msg_text"] = update.message.text
+    await update.message.reply_text("🔘 Now send me the button text:")
+    return ASK_BTN_TEXT
+
+
+# -----------------------------
+# Step 2 - Get button text
+async def get_button_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["btn_text"] = update.message.text
+    await update.message.reply_text("🌐 Finally, send me the button URL:")
+    return ASK_BTN_URL
+
+
+# -----------------------------
+# Step 3 - Get button URL and post to channel
+async def get_button_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg_text = context.user_data["msg_text"]
+    btn_text = context.user_data["btn_text"]
+    btn_url = update.message.text
+
+    keyboard = [[InlineKeyboardButton(btn_text, url=btn_url)]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    update.message.reply_text(
-        text="👀 Preview of your post:\n\n" + context.user_data['message_text'],
+    # Send to channel (from channel side)
+    await context.bot.send_message(
+        chat_id=CHANNEL_ID,
+        text=msg_text,
         reply_markup=reply_markup
     )
 
-    # Ask for confirmation
-    confirm_keyboard = [
-        [InlineKeyboardButton("✅ Yes, post it", callback_data="yes"),
-         InlineKeyboardButton("❌ No, cancel", callback_data="no")]
-    ]
-    confirm_markup = InlineKeyboardMarkup(confirm_keyboard)
-
-    update.message.reply_text("Do you want to post this to your channel?", reply_markup=confirm_markup)
-
-    return CONFIRM
-
-def confirm(update: Update, context: CallbackContext):
-    query = update.callback_query
-    query.answer()
-
-    if query.data == "yes":
-        # Send to channel
-        keyboard = [[InlineKeyboardButton(context.user_data['button_text'], url=context.user_data['button_url'])]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        context.bot.send_message(
-            chat_id=CHANNEL_ID,
-            text=context.user_data['message_text'],
-            reply_markup=reply_markup
-        )
-        query.edit_message_text("✅ Message posted to your channel!")
-
-    else:
-        query.edit_message_text("❌ Cancelled. Nothing was posted.")
-
+    await update.message.reply_text("✅ Posted to channel successfully!")
     return ConversationHandler.END
 
-def cancel(update: Update, context: CallbackContext):
-    update.message.reply_text("❌ Cancelled.")
+
+# -----------------------------
+# Cancel
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ Cancelled.")
     return ConversationHandler.END
 
+
+# -----------------------------
+# Main
 def main():
-    TOKEN = "8190987979:AAGqLQxym3_45oM0W1hhwfl2t0XTM4ZUOT4"  # Replace with your bot token
-    updater = Updater(TOKEN)
-    dp = updater.dispatcher
+    app = Application.builder().token(BOT_TOKEN).build()
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
+    conv = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
         states={
-            TEXT: [MessageHandler(Filters.text & ~Filters.command, get_text)],
-            BUTTON_TEXT: [MessageHandler(Filters.text & ~Filters.command, get_button_text)],
-            BUTTON_URL: [MessageHandler(Filters.text & ~Filters.command, get_button_url)],
-            CONFIRM: [CallbackQueryHandler(confirm)],
+            ASK_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_text)],
+            ASK_BTN_TEXT: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_button_text)],
+            ASK_BTN_URL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_button_url)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)]
+        fallbacks=[CommandHandler("cancel", cancel)],
     )
 
-    dp.add_handler(conv_handler)
+    app.add_handler(conv)
 
-    updater.start_polling()
-    updater.idle()
+    print("🤖 Bot started...")
+    app.run_polling()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
