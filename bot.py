@@ -1,18 +1,19 @@
 import logging
 import asyncio
+import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler, ContextTypes
 
 # -----------------------------
-# Logging
-logging.basicConfig(level=logging.INFO)
+# Logging (only warnings and errors to reduce spam)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # -----------------------------
-# Replace with your own info
-BOT_TOKEN = "8190987979:AAGqLQxym3_45oM0W1hhwfl2t0XTM4ZUOT4"
-CHANNEL_ID = -1002678391495   # Your channel ID
-ADMIN_ID = 7282835498         # Only you can use the bot
+# Environment variables (set in Render)
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+CHANNEL_ID = int(os.environ.get("CHANNEL_ID"))
+ADMIN_ID = int(os.environ.get("ADMIN_ID"))
 
 # States
 ASK_TEXT, ASK_BTN_TEXT, ASK_BTN_URL = range(3)
@@ -26,7 +27,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🚫 Access Denied! Only the channel admin can use this bot.")
         return ConversationHandler.END
 
-    # Fake animation for verifying admin
     msg = await update.message.reply_text("🔐 Verifying admin...")
     await asyncio.sleep(1)
     await msg.edit_text("🔐 Verifying admin... ▓░░░")
@@ -65,7 +65,6 @@ async def get_button_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton(btn_text, url=btn_url)]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send to channel
     await context.bot.send_message(
         chat_id=CHANNEL_ID,
         text=msg_text,
